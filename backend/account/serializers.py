@@ -3,7 +3,7 @@ from django.forms import ValidationError
 from rest_framework import serializers
 
 from account.utils import Util
-from .models import User, FamilyDetailModel
+from .models import User, ProfilePicModel, FamilyDetailModel, WorkInformationModel, DocumentsModel
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -136,7 +136,18 @@ class UserPasswordResetSerializer(serializers.ModelSerializer):
         except (DjangoUnicodeDecodeError, User.DoesNotExist):
             raise serializers.ValidationError('Invalid uid or token')
 
-        return attrs
+        return 
+    
+#Profile Picture Serializer
+class ProfilePictureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProfilePicModel
+        fields = ['profile_pic']
+
+    def create(self, validated_data):
+        user = self.context.get('user')
+        profile_data = ProfilePicModel.objects.create(user=user, **validated_data)
+        return profile_data
     
 
 #Family Detail Serializer
@@ -149,4 +160,28 @@ class FamilyDetailSerializer(serializers.ModelSerializer):
         user = self.context.get('user')
         family_data = FamilyDetailModel.objects.create(user=user, **validated_data)
         return family_data
+    
+# Work Information Serializer
+class WorkInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkInformationModel
+        fields = ['applicationType', 'passport_no', 'country', 'company', 'profession', 'salary']
+
+    def create(self, validated_data):
+        user = self.context.get('user')
+        work_information = WorkInformationModel.objects.create(user=user, **validated_data)
+        return work_information
+    
+#Documents Serializer
+class DocumentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentsModel
+        fields = ['passport', 'visa', 'embassy_letter', 'contract_paper', 'driving_license']
+
+
+    def create(self, validated_data):
+        user = self.context.get('user')
+        documents = DocumentsModel.objects.create(user=user, **validated_data)
+        return documents
+    
 
