@@ -155,3 +155,41 @@ class DocumentsModel(models.Model):
 
     def __str__(self):
         return f"Documents for {self.user.email}"
+
+
+class Payment(models.Model):
+    PAYMENT_STATUSES = (
+    ('Pending', 'Pending'),
+    ('Completed', 'Completed'),
+    ('Failed', 'Failed'),
+)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='Fee_Payment')
+    pidx = models.CharField(max_length=100)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    purchase_order_id = models.CharField(max_length=100)
+    purchase_order_name = models.CharField(max_length=100)
+    status = models.CharField(max_length=50, choices=PAYMENT_STATUSES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+
+    def __str__(self):
+        return f'{self.purchase_order_name} - {self.status}'
+
+class Application(models.Model):
+    STATUS_CHOICES = [
+        ('Unsubmit', 'Unsubmit'),
+        ('Submitted', 'Submitted'),
+        ('Resubmitted', 'Resubmitted'),
+        ('Rejected', 'Rejected'),
+        ('Verified', 'Verified'),
+        ('Approved', 'Approved'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='Forms')
+    application_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Unsubmit')
+    description = models.CharField(max_length=100, null=True, blank=True)
+    date_of_submission = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Application submitted by {self.user.email} on {self.date_of_submission}"
+
+

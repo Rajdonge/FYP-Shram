@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure--a6h1ui%t$hkhxqgqvy7l7yx^089mx^v8z0ee_1+f@vp-&73rk
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.68', '127.0.0.1']
+ALLOWED_HOSTS = ['192.168.1.68', '127.0.0.1', '192.168.1.118', '192.168.43.121', '192.168.1.193']
 
 
 # Application definition
@@ -95,8 +95,12 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'shram',
+        'USER': 'root',
+        'PASSWORD': 'abnisha',
+        'HOST': 'localhost',
+        'PORT': '3306'
     }
 }
 
@@ -150,7 +154,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'account.User'
 
-# Email Configuration
+#Email Configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587

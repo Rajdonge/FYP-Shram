@@ -10,3 +10,6 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+admin.site.index_title = "मेरो श्रम"
+admin.site.site_header = "मेरो श्रम ADMIN"
+admin.site.site_title = "SITE TITLE मेरो श्रम"

@@ -3,7 +3,7 @@ from django.forms import ValidationError
 from rest_framework import serializers
 
 from account.utils import Util
-from .models import User, ProfilePicModel, FamilyDetailModel, WorkInformationModel, DocumentsModel
+from .models import User, ProfilePicModel, FamilyDetailModel, WorkInformationModel, DocumentsModel, Payment, Application
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -91,7 +91,7 @@ class SendPasswordResetEmailSerializer(serializers.ModelSerializer):
             print('Encoded uid', uid)
             token = PasswordResetTokenGenerator().make_token(user)
             print('Password Reset token', token)
-            link = 'http://192.168.1.68:5554/api/user/reset-password/'+uid+'/'+token
+            link = 'http://192.168.1.118:5554/api/user/reset-password/'+uid+'/'+token
             print('Password Reset Link', link)
 
             #send Email
@@ -136,7 +136,7 @@ class UserPasswordResetSerializer(serializers.ModelSerializer):
         except (DjangoUnicodeDecodeError, User.DoesNotExist):
             raise serializers.ValidationError('Invalid uid or token')
 
-        return 
+        return attrs
     
 #Profile Picture Serializer
 class ProfilePictureSerializer(serializers.ModelSerializer):
@@ -185,3 +185,24 @@ class DocumentsSerializer(serializers.ModelSerializer):
         return documents
     
 
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['pidx', 'total_amount', 'purchase_order_id', 'purchase_order_name', 'status', 'created_at']
+    
+    def create(self, validated_data):
+        user = self.context.get('user')
+        payment_detail = Payment.objects.create(user=user, **validated_data)
+        return payment_detail
+
+class ApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = ['user', 'application_status', 'description', 'date_of_submission']
+        extra_kwargs = {'application_status': {'default': 'Unsubmit'}}
+    
+    def create(self, validated_data):
+        user = self.context.get('user')
+        appInfo = Application.objects.create(user=user, **validated_data)
+        return appInfo
+    

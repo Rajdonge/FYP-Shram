@@ -1,14 +1,20 @@
 from rest_framework.views import APIView
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, UserUpdateProfileSerializer, UserChangePasswordSerializer, SendPasswordResetEmailSerializer, UserPasswordResetSerializer, ProfilePictureSerializer, FamilyDetailSerializer, WorkInformationSerializer, DocumentsSerializer
-from .models import FamilyDetailModel, ProfilePicModel, WorkInformationModel, DocumentsModel
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, UserUpdateProfileSerializer, UserChangePasswordSerializer, SendPasswordResetEmailSerializer, UserPasswordResetSerializer, ProfilePictureSerializer, FamilyDetailSerializer, WorkInformationSerializer, DocumentsSerializer, PaymentSerializer, ApplicationSerializer
+from .models import FamilyDetailModel, ProfilePicModel, WorkInformationModel, DocumentsModel, Payment, Application
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import JsonResponse
+import requests
+import json
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import permission_classes
 
 from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.decorators import login_required
+from rest_framework.decorators import api_view
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -255,3 +261,129 @@ class DocumentsView(APIView):
                 return Response({'Documents updated successfully.'}, status=status.HTTP_200_OK)
         except DocumentsModel.DoesNotExist:
             return Response({'Documents not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def initiate_payment(request):
+    user = request.user  # Get authenticated user
+    print("User: ", user)
+    
+    # Extract data from request
+    return_url = request.data.get('return_url')
+    website_url = request.data.get('website_url')
+    amount = request.data.get('amount')
+    purchase_order_id = request.data.get('purchase_order_id')
+    purchase_order_name = request.data.get('purchase_order_name')
+    customer_info = request.data.get('customer_info', {})
+    
+    # Additional data for authentication
+    auth_key = 'live_secret_key_68791341fdd94846a146f0457ff7b455'
+    headers = {'Authorization': f'Key {auth_key}', 'Content-Type': 'application/json'}
+    
+    # Construct payload
+    payload = {
+        "return_url": return_url,
+        "website_url": website_url,
+        "amount": amount,
+        "purchase_order_id": purchase_order_id,
+        "purchase_order_name": purchase_order_name,
+        "customer_info": customer_info
+    }
+    
+    # Make request to Khalti API
+    response = requests.post('https://a.khalti.com/api/v2/epayment/initiate/', json=payload, headers=headers)
+    data = response.json()
+    
+    return Response(data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def callback(request):
+    # Get the authenticated user (assuming the request contains the user's token)
+    user = request.user
+    print("User: ", user)
+    
+    # Extract parameters from the callback URL
+    pidx = request.GET.get('pidx')
+    total_amount = request.GET.get('total_amount')
+    purchase_order_id = request.GET.get('purchase_order_id')
+    purchase_order_name = request.GET.get('purchase_order_name')
+    status = request.GET.get('status')
+    
+    # Log parameters for debugging
+    print("pidx:", pidx)
+    print("status:", status)
+    
+    
+     # Return a successful response
+    response_data = {
+            'message': 'Callback processed successfully',
+            'pidx': pidx,
+            'status': status,
+        }
+    return Response(response_data)
+    
+    # If the payment was not successful, return an error response
+    response_data = {
+        'message': 'Payment failed',
+        'pidx': pidx,
+        'status': status,
+    }
+    return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+class SavePayment(APIView):
+    permission_classes=[IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        payments = Payment.objects.filter(user=user)
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data)
+
+
+    def post(self, request):
+        user = request.user
+        serializer = PaymentSerializer(data=request.data, context={'user': user})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'msg': 'Submitted successfully.'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    
+class ApplicationSubmissionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            application = Application.objects.get(user=user)
+            serializer = ApplicationSerializer(application)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Application.DoesNotExist:
+            # Return default values when application is not found
+            default_data = {'application_status': 'Unsubmit', 'date_of_submission': None}
+            return Response(default_data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            application, created = Application.objects.get_or_create(user=user)
+
+            # Check the current application status and update accordingly
+            if application.application_status == 'Unsubmit':
+                application.application_status = 'Submitted'
+            elif application.application_status == 'Rejected':
+                application.application_status = 'Resubmitted'
+
+            elif application.application_status == 'Approved':
+                application.application_status == 'Submitted'
+
+            application.save()
+            serializer = ApplicationSerializer(application, context={'user': user})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Application.DoesNotExist:
+            return Response({"error": "Application not found for this user"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+        
+            

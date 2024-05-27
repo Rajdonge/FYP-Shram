@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserRegistrationView, UserLoginView, UserLogoutView, UserProfileView, UserUpdateProfileView, UserChangePasswordView, SendPasswordResetEmailView, UserPasswordResetView, ProfilePictureView, FamilyDetailView, WorkInformationView, DocumentsView
+from .views import UserRegistrationView, UserLoginView, UserLogoutView, UserProfileView, UserUpdateProfileView, UserChangePasswordView, SendPasswordResetEmailView, UserPasswordResetView, ProfilePictureView, FamilyDetailView, WorkInformationView, DocumentsView, initiate_payment, callback, ApplicationSubmissionView, SavePayment
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='register'),
@@ -14,4 +14,9 @@ urlpatterns = [
     path('family-details/', FamilyDetailView.as_view(), name='family-details'),
     path('work-info/', WorkInformationView.as_view(), name='work-info'),
     path('documents/', DocumentsView.as_view(), name='documents'),
+    path('initiate-payment/', initiate_payment, name='initiate_payment'),
+    path('callback/', callback, name='callback'),
+    path('savepayment/', SavePayment.as_view(), name='savepayment'),
+    path('submit-application/', ApplicationSubmissionView.as_view(), name='submit-application'),
+
 ]
